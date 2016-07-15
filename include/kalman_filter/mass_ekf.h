@@ -176,13 +176,13 @@ public:
         //TODO set stateCov
         filter.setCovariance(stateCov);
 
-        // Set process noise covariance
+        // Set process noise covariance (Q)
         Kalman::Covariance<MyState> ncov;
         ncov.setIdentity();
         //TODO set ncov
         sys.setCovariance(ncov);
 
-        // Set measurement covariances
+        // Set measurement covariances (R)
         Kalman::Covariance< MyMeasurement > cov;
         cov.setIdentity();
         //TODO cov.setZero();

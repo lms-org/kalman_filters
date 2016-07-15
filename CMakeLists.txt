@@ -8,6 +8,8 @@ set(HEADERS
     include/kalman_filter/line_ekf.h
     include/kalman_filter/ctra_ekf.h
     include/kalman_filter/mass_ekf.h
+    include/filter/line_line_x.h
+    include/utils.h
 )
 
 include_directories(
