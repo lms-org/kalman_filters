@@ -56,27 +56,53 @@ int main(int argc, char** argv){
     window.setCentralWidget(&chartView);
     window.resize(400, 300);
     window.show();
-    chart->axisX()->setRange(0,10);
-    chart->axisY()->setRange(0,10);
+    //chart->axisX()->setRange(0,10);
+    //chart->axisY()->setRange(-1,-1);
+
     while(true){
         //create new measurement-points
         Eigen::Matrix<double,10,2> mData;
-        double d = 0.2;
+        double d = 1.5;
         double offset = 0;
         float randomF = 1;
+
+        //range
+        float xmin = 0;
+        float xmax = 0;
+        float ymin = 0;
+        float ymax = 0;
         for(int i = 0; i < 10; i++){
             float r = ((double) rand() / (RAND_MAX));
             mData(i,0) = i;
             mData(i,1) = d*i+offset + randomF*r;
-        }
 
+            //range checks
+            if(mData(i,0) < xmin){
+                xmin = mData(i,0);
+            }
+            if(mData(i,0) > xmax){
+                xmax = mData(i,0);
+            }
+            if(mData(i,0) < ymin){
+                ymin = mData(i,0);
+            }
+            if(mData(i,0) > ymax){
+                ymax = mData(i,0);
+            }
+        }
         //conversion to qt points
         points.clear();
+        fit.clear();
         for(int i = 0; i < 10; i++){
             points.append(mData(i,0),mData(i,1));
         }
 
+        //TODO fit line
+
         //update the gui
+        //resize it manally as it doesn't work atm
+        chart->axisX()->setRange(xmin,xmax);
+        chart->axisY()->setRange(ymin,ymax);
         app.processEvents();
 
         //timer
