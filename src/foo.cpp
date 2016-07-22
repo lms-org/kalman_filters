@@ -33,8 +33,12 @@ int main(int argc, char** argv){
 
 
     LineX lineX;
-    lineX.init(8);
-    lineX.lineLength = 2;
+    lineX.init(14);
+    lineX.lineLength = 1;
+    lineX.fixX = true;
+    lineX.fixY = false;
+
+    //PROBLEM: Punkte, welche länger als lineX sind ziehen es in die länge bei Knicken
 
 
     //QWT http://qwt.sourceforge.net/
@@ -49,10 +53,10 @@ int main(int argc, char** argv){
 
     QChart *chart = new QChart();
     chart->legend()->hide();
-    chart->addSeries(&fit);
     chart->addSeries(&points);
+    chart->addSeries(&fit);
     chart->createDefaultAxes();
-    chart->setTitle("Simple line chart example");
+    chart->setTitle("Line X Model #Ada");
 
     QChartView chartView(chart);
     chartView.setRenderHint(QPainter::Antialiasing);
@@ -63,14 +67,17 @@ int main(int argc, char** argv){
     window.show();
     //chart->axisX()->setRange(0,10);
     //chart->axisY()->setRange(-1,-1);
-
+    int iter = 0;
     while(true){
+        iter++;
+        std::cout <<"iteration "<<iter<<std::endl;
+        chart->setTitle(QString::fromStdString("Line X Model Iteration: " + std::to_string(iter)));
         //create new measurement-points
         int numberOfPoints = 10;
         Eigen::Matrix<double,Eigen::Dynamic,2> mData(numberOfPoints,2);
         double d = 0.2;
-        double offset = 0;
-        float randomF = 0.2;
+        double offset = 5;
+        float randomF = 1;
 
         //range
         float xmin = 0;
@@ -80,8 +87,20 @@ int main(int argc, char** argv){
         for(int i = 0; i < numberOfPoints; i++){
             float r = ((double) rand() / (RAND_MAX));
             mData(i,0) = i;
+#define PARABEL
+#ifdef KREUZUNG
+            //kreuzung
+            if(i < 3){
+                mData(i,1) = 2;
+            }else{
+                mData(i,0) = 3;
+                mData(i,1) = mData(i-1,1)-1;
+            }
+#endif
+#ifdef PARABEL
+            //parabel
             mData(i,1) = d*mData(i,0)*mData(i,0)+offset + randomF*r;
-
+#endif
             //range checks
             if(mData(i,0) < xmin){
                 xmin = mData(i,0);
@@ -96,6 +115,7 @@ int main(int argc, char** argv){
                 ymax = mData(i,1);
             }
         }
+        std::cout << lineX.state<<std::cout;
         //fit line
         double error = 0;
         for(int i = 0; i < numberOfPoints; i++){
@@ -140,7 +160,7 @@ int main(int argc, char** argv){
         app.processEvents();
 
         //timer
-        usleep(1000);
+        usleep(100000);
     }
 
 }

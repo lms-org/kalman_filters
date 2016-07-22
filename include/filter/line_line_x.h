@@ -6,8 +6,12 @@
 #include <utils.h>
 #include <limits>
 #include <iostream>
+#include <cmath>
 
 struct LineX{
+
+    bool fixX = false;
+    bool fixY = false;
 
     float lineLength = 1;
     /**
@@ -21,9 +25,15 @@ struct LineX{
         Eigen::Matrix<double,Eigen::Dynamic,2>  stateXY(((int)statePhi.cols()*statePhi.rows())-1,2);
         stateXY(0,0) = statePhi(0);
         stateXY(0,1) = statePhi(1);
+        double angle = 0;
+        Eigen::Rotation2D<double> r(angle);
         for(int i = 2; i < statePhi.rows()*statePhi.cols();i++){
-            stateXY(i-1,0) = stateXY(i-2,0) + lineLength*cos(statePhi(i));
-            stateXY(i-1,1) = stateXY(i-2, 1) + lineLength*sin(statePhi(i));
+            r.angle() = angle;
+            Eigen::Vector2d dXY(lineLength*cos(statePhi(i)),lineLength*sin(statePhi(i)));
+            dXY = r*dXY;
+            stateXY(i-1,0) = stateXY(i-2,0) + dXY(0);
+            stateXY(i-1,1) = stateXY(i-2, 1) + dXY(1);
+            angle += statePhi(i);
         }
         return stateXY;
     }
@@ -34,7 +44,7 @@ struct LineX{
         statePhi(1) = stateXY(1);
         for(int i = 2; i < stateXY.rows()*stateXY.cols();i+=2){
             statePhi(i) = stateXY((i-1)*2) + cos(stateXY(i));
-            statePhi(i*2+1) = stateXY((i-1)*2 +1) + sin(stateXY(i));
+            statePhi(i*2+1) = stateXY((i-1)*2 +1) + sin(stateXY(i)); //TODO
         }
         return statePhi;
     }
@@ -95,14 +105,36 @@ struct LineX{
     }
 
     double update(const Eigen::Vector2d& p){
+        //std::cout<<"UPDATE: "<<p<<std::endl;
         //get nearest point
-        int closestPart;
-        double mindistance = minimum_distance(toXY(state,lineLength),p,closestPart);
+        int closestPoint; //in xy
+        double mindistance = minimum_distance(toXY(state,lineLength),p,closestPoint);
+        //std::cout<<"closest part: "<<closestPoint<<std::endl;
+        double oldX = 0,oldY = 0;
+        if(fixX)
+            oldX = state(0);
+        if(fixY)
+            oldY = state(1);
 
         //model X :D
         Eigen::VectorXd derv = deriveDistance(p);
-        float alpha = 1e-3;
+        Eigen::MatrixXd alpha = Eigen::MatrixXd::Identity(derv.rows(),derv.rows());
+        alpha *= 1e-3;
+        alpha(0,0) = 1e-1;
+        alpha(1,1) = 1e-1;
+        //das bringt sehr wenig
+        for(int i = 2; i< derv.rows(); i++){
+            //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
+            //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
+        }
+        //std::cout <<alpha<<std::endl;
         state = state -alpha*derv;
+
+        if(fixX)
+            state(0) = oldX;
+        if(fixY)
+            state(1) = oldY;
+
         return mindistance;
 
     }
@@ -113,7 +145,6 @@ struct LineX{
             Eigen::Matrix<double,Eigen::Dynamic,2> xy = toXY(x,lineLength);
             int unused;
             double minDistance = LineX::minimum_distance(xy,p,unused);
-            std::cout <<"MINDIST : "<<minDistance <<std::endl;
             return minDistance;
         };
 
@@ -122,8 +153,18 @@ struct LineX{
     }
 
 
-    void translate(float dx, float dy, float dphi){
-
+    void translate(float dx, float dy, float phi){
+        Eigen::Matrix<double,Eigen::Dynamic,2> sxy = toXY(state,lineLength);
+        Eigen::Matrix<double,3,3> rt;
+        rt.setZero();
+        rt(0,0) = std::cos(phi);
+        rt(1,0) = std::sin(phi);
+        rt(0,1) = -std::sin(phi);
+        rt(1,1) = std::cos(phi);
+        rt(0,2) = dx;
+        rt(1,2) = dy;
+        rt(1,2) = 1;
+        //TODO
     }
 
 };
