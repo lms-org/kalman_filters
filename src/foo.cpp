@@ -1,5 +1,6 @@
 #include <kalman_filter/mass_ekf.h>
 #include <filter/line_line_x.h>
+#include <filter/sgd.h>
 #include <iostream>
 #include <Eigen/Eigen>
 #include <cmath>
@@ -33,8 +34,8 @@ int main(int argc, char** argv){
 
 
     LineX lineX;
-    lineX.init(14);
-    lineX.lineLength = 1;
+    lineX.init(8);
+    lineX.lineLength = 0.2;
     lineX.fixX = true;
     lineX.fixY = false;
 
@@ -76,7 +77,7 @@ int main(int argc, char** argv){
         int numberOfPoints = 10;
         Eigen::Matrix<double,Eigen::Dynamic,2> mData(numberOfPoints,2);
         double d = 0.2;
-        double offset = 5;
+        double offset = 0.2;
         float randomF = 1;
 
         //range
@@ -86,7 +87,7 @@ int main(int argc, char** argv){
         float ymax = 0;
         for(int i = 0; i < numberOfPoints; i++){
             float r = ((double) rand() / (RAND_MAX));
-            mData(i,0) = i;
+            mData(i,0) = 0.2*i;
 #define PARABEL
 #ifdef KREUZUNG
             //kreuzung
@@ -115,14 +116,14 @@ int main(int argc, char** argv){
                 ymax = mData(i,1);
             }
         }
-        std::cout << lineX.state<<std::cout;
+        //std::cout << lineX.state<<std::cout;
         //fit line
         double error = 0;
         for(int i = 0; i < numberOfPoints; i++){
-            error +=lineX.update(Eigen::Vector2d(mData(i,0),mData(i,1)));
+            lineX.update(Eigen::Vector2d(mData(i,0),mData(i,1)));
         }
         error = error/numberOfPoints;
-        std::cout<<"error: " <<error<<std::endl;
+        //std::cout<<"error: " <<error<<std::endl;
 
         //conversion to qt points
         //std::cout <<"state: "<<lineX.state<<std::endl;

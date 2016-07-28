@@ -1,6 +1,6 @@
 #ifndef LINE_X_H
 #define LINE_X_H
-
+#include "sgd.h"
 #include <eigen3/Eigen/Eigen>
 #include <algorithm>
 #include <utils.h>
@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cmath>
 
-struct LineX{
+struct LineX:public sgd::SGDVanilla{
 
     bool fixX = false;
     bool fixY = false;
@@ -18,7 +18,107 @@ struct LineX{
      * @brief state first value
      * x0,y0,phi0,...phin values
      */
-    Eigen::VectorXd state;
+
+    void init(int numerOfSegments){
+        state.resize(numerOfSegments+2);
+        state.setZero();
+        sg = [this](const Eigen::VectorXd &data,Eigen::MatrixXd& alpha){
+            //int closestPoint; //in xy
+            //double mindistance = minimum_distance(toXY(state,lineLength),data,closestPoint);
+            alpha *= 1e-3;
+            alpha(0,0) = 1e-1;
+            alpha(1,1) = 1e-1;
+            //das bringt sehr wenig
+            Eigen::VectorXd derv = deriveDistance(data);
+            for(int i = 2; i< derv.rows(); i++){
+                //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
+                //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
+            }
+            return derv;
+        };
+    }
+
+    virtual void update(const Eigen::MatrixXd& data) override{
+        if(data.rows()*data.cols() == 0){
+            return;
+        }
+        /*
+        double oldX = 0,oldY = 0;
+        if(fixX)
+            oldX = state(0);
+        if(fixY)
+            oldY = state(1);
+        this->SGDVanilla::update(data);
+
+        if(fixX)
+            state(0) = oldX;
+        if(fixY)
+            state(1) = oldY;
+            */
+        //std::cout<<"UPDATE: "<<p<<std::endl;
+        //get nearest point
+        Eigen::Vector2d p = data; //TODO
+        int closestPoint; //in xy
+        double mindistance = minimum_distance(toXY(state,lineLength),p,closestPoint);
+        //std::cout<<"closest part: "<<closestPoint<<std::endl;
+        double oldX = 0,oldY = 0;
+        if(fixX)
+            oldX = state(0);
+        if(fixY)
+            oldY = state(1);
+
+        //model X :D
+        Eigen::VectorXd derv = deriveDistance(p);
+        Eigen::MatrixXd alpha = Eigen::MatrixXd::Identity(derv.rows(),derv.rows());
+        alpha *= 1e-3;
+        alpha(0,0) = 1e-2;
+        alpha(1,1) = 1e-2;
+        //das bringt sehr wenig
+        for(int i = 2; i< derv.rows(); i++){
+            //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
+            //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
+        }
+        //std::cout <<alpha<<std::endl;
+        state = state -alpha*derv;
+
+        if(fixX)
+            state(0) = oldX;
+        if(fixY)
+            state(1) = oldY;
+    }
+
+    Eigen::VectorXd deriveDistance(const Eigen::Vector2d& p){
+        std::function<double(Eigen::VectorXd)> dist =[this,p](const Eigen::VectorXd x){
+            //get the min distance
+            Eigen::Matrix<double,Eigen::Dynamic,2> xy = toXY(x,lineLength);
+            int unused;
+            double minDistance = LineX::minimum_distance(xy,p,unused);
+            return minDistance;
+        };
+
+        Eigen::VectorXd deriv = KALMAN_FILTER::differentiate<Eigen::VectorXd,double>(dist,state,KALMAN_FILTER::DOUBLE_H);
+        return deriv;
+    }
+
+
+    void translate(float dx, float dy, float phi){
+        Eigen::Matrix<double,Eigen::Dynamic,2> sxy = toXY(state,lineLength);
+        Eigen::Matrix<double,3,3> rt;
+        rt.setZero();
+        rt(0,0) = std::cos(phi);
+        rt(1,0) = std::sin(phi);
+        rt(0,1) = -std::sin(phi);
+        rt(1,1) = std::cos(phi);
+        rt(0,2) = dx;
+        rt(1,2) = dy;
+        rt(1,2) = 1;
+        //TODO
+    }
+
+    Eigen::Matrix<double,Eigen::Dynamic,2> toXY(){
+        return toXY(state,lineLength);
+    }
+
 
     static Eigen::Matrix<double,Eigen::Dynamic,2>  toXY(Eigen::VectorXd statePhi,const double lineLength){
         //std::cout<<"lineLength: "<<lineLength<<std::endl;
@@ -97,74 +197,6 @@ struct LineX{
         const float t = (p - v).dot(w - v) / l2;
         const Eigen::Vector2d projection = v + t * (w - v);  // Projection falls on the segment
         return (p-projection).norm();
-    }
-
-    void init(int numerOfSegments){
-        state.resize(numerOfSegments+2);
-        state.setZero();
-    }
-
-    double update(const Eigen::Vector2d& p){
-        //std::cout<<"UPDATE: "<<p<<std::endl;
-        //get nearest point
-        int closestPoint; //in xy
-        double mindistance = minimum_distance(toXY(state,lineLength),p,closestPoint);
-        //std::cout<<"closest part: "<<closestPoint<<std::endl;
-        double oldX = 0,oldY = 0;
-        if(fixX)
-            oldX = state(0);
-        if(fixY)
-            oldY = state(1);
-
-        //model X :D
-        Eigen::VectorXd derv = deriveDistance(p);
-        Eigen::MatrixXd alpha = Eigen::MatrixXd::Identity(derv.rows(),derv.rows());
-        alpha *= 1e-3;
-        alpha(0,0) = 1e-1;
-        alpha(1,1) = 1e-1;
-        //das bringt sehr wenig
-        for(int i = 2; i< derv.rows(); i++){
-            //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
-            //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
-        }
-        //std::cout <<alpha<<std::endl;
-        state = state -alpha*derv;
-
-        if(fixX)
-            state(0) = oldX;
-        if(fixY)
-            state(1) = oldY;
-
-        return mindistance;
-
-    }
-
-    Eigen::VectorXd deriveDistance(const Eigen::Vector2d& p){
-        std::function<double(Eigen::VectorXd)> dist =[this,p](const Eigen::VectorXd x){
-            //get the min distance
-            Eigen::Matrix<double,Eigen::Dynamic,2> xy = toXY(x,lineLength);
-            int unused;
-            double minDistance = LineX::minimum_distance(xy,p,unused);
-            return minDistance;
-        };
-
-        Eigen::VectorXd deriv = KALMAN_FILTER::differentiate<Eigen::VectorXd,double>(dist,state,KALMAN_FILTER::DOUBLE_H);
-        return deriv;
-    }
-
-
-    void translate(float dx, float dy, float phi){
-        Eigen::Matrix<double,Eigen::Dynamic,2> sxy = toXY(state,lineLength);
-        Eigen::Matrix<double,3,3> rt;
-        rt.setZero();
-        rt(0,0) = std::cos(phi);
-        rt(1,0) = std::sin(phi);
-        rt(0,1) = -std::sin(phi);
-        rt(1,1) = std::cos(phi);
-        rt(0,2) = dx;
-        rt(1,2) = dy;
-        rt(1,2) = 1;
-        //TODO
     }
 
 };

@@ -24,7 +24,7 @@ namespace KALMAN_FILTER{
         return res;
     }
 
-    double differentiate(std::function<double(double)> f,float x, double h = 1e-7){
+    inline double differentiate(std::function<double(double)> f,float x, double h = 1e-7){
         return (f(x+h)-f(x-h))/(2*h);
     }
 }
