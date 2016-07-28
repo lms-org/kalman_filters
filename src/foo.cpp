@@ -12,6 +12,7 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QSplineSeries>
 #include <QtCharts/QScatterSeries>
+#include <filter/adam.h>
 
 int main(int argc, char** argv){
     (void)argc;
@@ -127,7 +128,7 @@ int main(int argc, char** argv){
 
         //conversion to qt points
         //std::cout <<"state: "<<lineX.state<<std::endl;
-        Eigen::Matrix<double,Eigen::Dynamic,2> xy = LineX::toXY(lineX.state,lineX.lineLength);
+        Eigen::Matrix<double,Eigen::Dynamic,2> xy = lineX.toXY();
         //std::cout <<"statexy: "<<xy<<std::endl;
 
         points.clear();

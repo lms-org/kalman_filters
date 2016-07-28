@@ -1,6 +1,7 @@
 #ifndef LINE_X_H
 #define LINE_X_H
 #include "sgd.h"
+#include "adam.h"
 #include <eigen3/Eigen/Eigen>
 #include <algorithm>
 #include <utils.h>
@@ -8,7 +9,11 @@
 #include <iostream>
 #include <cmath>
 
-struct LineX:public sgd::SGDVanilla{
+
+//typedef LineX<sgd::Adam> LineAdam;
+//typedef LineX<sgd::SGDVanilla> LineSGDVan;
+
+struct LineX:public sgd::Adam{
 
     bool fixX = false;
     bool fixY = false;
@@ -18,7 +23,6 @@ struct LineX:public sgd::SGDVanilla{
      * @brief state first value
      * x0,y0,phi0,...phin values
      */
-
     void init(int numerOfSegments){
         state.resize(numerOfSegments+2);
         state.setZero();
@@ -26,8 +30,8 @@ struct LineX:public sgd::SGDVanilla{
             //int closestPoint; //in xy
             //double mindistance = minimum_distance(toXY(state,lineLength),data,closestPoint);
             alpha *= 1e-3;
-            alpha(0,0) = 1e-1;
-            alpha(1,1) = 1e-1;
+            alpha(0,0) = 1e-2;
+            alpha(1,1) = 1e-2;
             //das bringt sehr wenig
             Eigen::VectorXd derv = deriveDistance(data);
             for(int i = 2; i< derv.rows(); i++){
@@ -42,45 +46,12 @@ struct LineX:public sgd::SGDVanilla{
         if(data.rows()*data.cols() == 0){
             return;
         }
-        /*
         double oldX = 0,oldY = 0;
         if(fixX)
             oldX = state(0);
         if(fixY)
             oldY = state(1);
-        this->SGDVanilla::update(data);
-
-        if(fixX)
-            state(0) = oldX;
-        if(fixY)
-            state(1) = oldY;
-            */
-        //std::cout<<"UPDATE: "<<p<<std::endl;
-        //get nearest point
-        Eigen::Vector2d p = data; //TODO
-        int closestPoint; //in xy
-        double mindistance = minimum_distance(toXY(state,lineLength),p,closestPoint);
-        //std::cout<<"closest part: "<<closestPoint<<std::endl;
-        double oldX = 0,oldY = 0;
-        if(fixX)
-            oldX = state(0);
-        if(fixY)
-            oldY = state(1);
-
-        //model X :D
-        Eigen::VectorXd derv = deriveDistance(p);
-        Eigen::MatrixXd alpha = Eigen::MatrixXd::Identity(derv.rows(),derv.rows());
-        alpha *= 1e-3;
-        alpha(0,0) = 1e-2;
-        alpha(1,1) = 1e-2;
-        //das bringt sehr wenig
-        for(int i = 2; i< derv.rows(); i++){
-            //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
-            //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
-        }
-        //std::cout <<alpha<<std::endl;
-        state = state -alpha*derv;
-
+        this->sgd::Adam::update(data);
         if(fixX)
             state(0) = oldX;
         if(fixY)
@@ -200,7 +171,6 @@ struct LineX:public sgd::SGDVanilla{
     }
 
 };
-
 
 
 #endif //LINE_X_H

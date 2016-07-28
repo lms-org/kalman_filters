@@ -19,7 +19,10 @@ struct SGDContainer{
 };
 
 struct SGDVanilla:public SGDContainer{
-
+    /**
+     * @brief update
+     * @param data are col vectors (each row is one vector)
+     */
     virtual void update(const Eigen::MatrixXd& data) override{
         opt(sg,state,data,numerOfIterations);
     }
@@ -33,7 +36,7 @@ struct SGDVanilla:public SGDContainer{
                 if(data.cols() <= 0)
                     derv = sg(Eigen::VectorXd(),alpha);
                 else{
-                    derv = sg(data.row(j),alpha);
+                    derv = sg(data.col(j),alpha);
                 }
                 state = state -alpha*derv;
                 j++;
