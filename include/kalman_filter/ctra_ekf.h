@@ -1,6 +1,6 @@
 #ifndef KALMAN_FILTERS_CTRA_EKF_H
 #define KALMAN_FILTERS_CTRA_EKF_H
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <kalman_filter/ctra_measurement_model.h>
 #include <kalman_filter/ctra_system_model.h>

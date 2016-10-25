@@ -2,7 +2,7 @@
 #define LINE_X_H
 #include "sgd.h"
 #include "adam.h"
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <algorithm>
 #include <utils.h>
 #include <limits>

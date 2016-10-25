@@ -1,7 +1,7 @@
 #ifndef LMS_SGD_H
 #define LMS_SGD_H
 
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <functional>
 namespace sgd{
 

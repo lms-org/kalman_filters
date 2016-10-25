@@ -1,6 +1,6 @@
 #ifndef KALMAN_FILTERS_LINE_EKF
 #define KALMAN_FILTERS_LINE_EKF
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 
 //TODO not done yet

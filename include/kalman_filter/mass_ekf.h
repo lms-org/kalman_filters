@@ -1,6 +1,6 @@
 #ifndef KALMAN_FILTERS_MASS_EKF_H
 #define KALMAN_FILTERS_MASS_EKF_H
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 
 //TODO not done yet
