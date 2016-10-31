@@ -34,10 +34,12 @@ struct LineX:public sgd::Adam{
             alpha(1,1) = 1e-2;
             //das bringt sehr wenig
             Eigen::VectorXd derv = deriveDistance(data);
+            /*
             for(int i = 2; i< derv.rows(); i++){
-                //alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
-                //alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
+                alpha(i,i) =alpha(i,i)*(1.0/std::pow((std::abs(i-closestPoint+2)+1),0.5)); //+2 um von xy in state Darstellung zu kommen
+                alpha(i,i) =alpha(i,i) *1.0/(std::pow(derv.rows()-i,1)/lineLength);// std::pow(i,0.5);
             }
+            */
             return derv;
         };
     }
@@ -84,6 +86,7 @@ struct LineX:public sgd::Adam{
         rt(1,2) = dy;
         rt(1,2) = 1;
         //TODO
+        //fromXY()
     }
 
     Eigen::Matrix<double,Eigen::Dynamic,2> toXY(){
