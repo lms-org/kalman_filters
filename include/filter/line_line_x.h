@@ -25,6 +25,10 @@ struct LineX:public sgd::Adam{
      */
     void init(int numerOfSegments){
         state.resize(numerOfSegments+2);
+        v.resize(numerOfSegments+2);
+        m.resize(numerOfSegments+2);
+        v.setZero();
+        m.setZero();
         state.setZero();
         sg = [this](const Eigen::VectorXd &data,Eigen::MatrixXd& alpha){
             //int closestPoint; //in xy
