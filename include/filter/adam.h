@@ -39,7 +39,9 @@ struct Adam:public SGDContainer{
 
     static void opt(SG sg,Eigen::VectorXd& state,const Eigen::MatrixXd& data, const int numberOfIterations,Eigen::VectorXd &m,Eigen::VectorXd &v, const double b1,const double b2,double a,double e){
         lms::logging::Logger logger("adam");
+        logger.debug("START");
         for(int i = 0; i < numberOfIterations; i++){
+            logger.debug("it")<<i;
             int j = 0;
             do{
                 Eigen::MatrixXd alpha = Eigen::MatrixXd::Identity(state.rows(),state.rows());
@@ -49,9 +51,12 @@ struct Adam:public SGDContainer{
                 else{
                     derv = sg(data.col(j),alpha);
                 }
+                logger.debug("v")<<derv;
                 logger.debug("derv")<<derv;
                 logger.debug("b1")<<b1;
                 logger.debug("b2")<<b2;
+                logger.debug("a")<<a;
+                logger.debug("e")<<e;
                 //calculate momentums
                 m = b1*m+(1-b1)*derv;
                 v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
