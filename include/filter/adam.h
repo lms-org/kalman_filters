@@ -52,7 +52,6 @@ struct Adam:public SGDContainer{
                     derv = sg(data.col(j),alpha);
                 }
                 logger.debug("state davor: ")<<state;
-                logger.debug("v")<<derv;
                 logger.debug("derv")<<derv;
                 logger.debug("b1")<<b1;
                 logger.debug("b2")<<b2;
@@ -61,6 +60,8 @@ struct Adam:public SGDContainer{
                 //calculate momentums
                 m = b1*m+(1-b1)*derv;
                 v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
+                logger.debug("m")<<m;
+                logger.debug("v")<<v;
 
                 //calculate bias corrected momentums
                 Eigen::VectorXd mC = m/(1-b1);
