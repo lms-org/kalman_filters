@@ -59,8 +59,8 @@ struct Adam:public SGDContainer{
                 logger.debug("e")<<e;
                 //calculate momentums
                 m = b1*m+(1-b1)*derv;
+                logger.debug("v_davor")<<v;
                 v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
-                logger.debug("m")<<m;
                 logger.debug("v")<<v;
 
                 //calculate bias corrected momentums
