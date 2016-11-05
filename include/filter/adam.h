@@ -51,6 +51,7 @@ struct Adam:public SGDContainer{
                 else{
                     derv = sg(data.col(j),alpha);
                 }
+                logger.debug("state davor: ")<<state;
                 logger.debug("v")<<derv;
                 logger.debug("derv")<<derv;
                 logger.debug("b1")<<b1;
@@ -67,6 +68,7 @@ struct Adam:public SGDContainer{
                 logger.debug("mC")<<mC;
                 logger.debug("mV")<<mV;
                 state = state - (a*mC.array()/(mV.array().sqrt()+e)).matrix();
+                logger.debug("state danach: ")<<state;
                 j++;
             }while(j < data.cols());
         }
