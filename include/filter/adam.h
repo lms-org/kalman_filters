@@ -35,6 +35,26 @@ struct Adam:public SGDContainer{
         Adam::opt(sg,state,data,numerOfIterations,m,v,b1,b2,a,e);
     }
 
+    /**
+     * @brief update
+     * @param data are col vectors (each row is one vector)
+     */
+    void updateFast(const Eigen::VectorXd& derv){
+        Adam::opt(state,derv,m,v,b1,b2,a,e);
+    }
+
+
+    static void opt(Eigen::VectorXd& state,const Eigen::VectorXd& derv,Eigen::VectorXd &m,Eigen::VectorXd &v, const double b1,const double b2,double a,double e){
+        //calculate momentums
+        m = b1*m+(1-b1)*derv;
+        v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
+
+        //calculate bias corrected momentums
+        Eigen::VectorXd mC = m/(1-b1);
+        Eigen::VectorXd mV = v/(1-b2*b2);
+        state = state - (a*mC.array()/(mV.array().sqrt()+e)).matrix();
+    }
+
     static void opt(SG sg,Eigen::VectorXd& state,const Eigen::MatrixXd& data, const int numberOfIterations,Eigen::VectorXd &m,Eigen::VectorXd &v, const double b1,const double b2,double a,double e){
         for(int i = 0; i < numberOfIterations; i++){
             int j = 0;
@@ -46,6 +66,8 @@ struct Adam:public SGDContainer{
                 else{
                     derv = sg(data.col(j),alpha);
                 }
+                opt(state,derv,m,v,b1,b2,a,e);
+                /*
                 //calculate momentums
                 m = b1*m+(1-b1)*derv;
                 v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
@@ -54,6 +76,7 @@ struct Adam:public SGDContainer{
                 Eigen::VectorXd mC = m/(1-b1);
                 Eigen::VectorXd mV = v/(1-b2*b2);
                 state = state - (a*mC.array()/(mV.array().sqrt()+e)).matrix();
+                */
                 j++;
             }while(j < data.cols());
         }

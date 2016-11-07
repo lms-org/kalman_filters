@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 
 
     LineX lineX;
-    lineX.init(8);
+    lineX.init(1);
     lineX.lineLength = 0.2;
     lineX.fixX = true;
     lineX.fixY = false;
@@ -75,7 +75,7 @@ int main(int argc, char** argv){
         std::cout <<"iteration "<<iter<<std::endl;
         chart->setTitle(QString::fromStdString("Line X Model Iteration: " + std::to_string(iter)));
         //create new measurement-points
-        int numberOfPoints = 10;
+        int numberOfPoints = 1;
         Eigen::Matrix<double,Eigen::Dynamic,2> mData(numberOfPoints,2);
         double d = 0.2;
         double offset = 0.2;
@@ -101,7 +101,7 @@ int main(int argc, char** argv){
 #endif
 #ifdef PARABEL
             //parabel
-            mData(i,1) = d*mData(i,0)*mData(i,0)+offset + randomF*r;
+            mData(i,1) = 1;//d*mData(i,0)*mData(i,0)+offset + randomF*r;
 #endif
             //range checks
             if(mData(i,0) < xmin){

@@ -46,7 +46,7 @@ add_executable(km
     ${SOURCES} ${HEADERS}
 )
 
-target_link_libraries(km PRIVATE Qt5::Widgets Qt5::Charts Qt5Core)
+target_link_libraries(km PRIVATE lmscore Qt5::Widgets Qt5::Charts Qt5Core)
 
 #target_link_libraries(kalman_filter PRIVATE lmscore)
 #add_library(kalman_filter SHARED ${SOURCES} ${HEADERS})
