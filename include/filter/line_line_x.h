@@ -8,11 +8,14 @@
 #include <limits>
 #include <iostream>
 #include <cmath>
+#include <lms/exception.h>
 
 struct LineX:public sgd::Adam{
 
     bool fixX = false;
     bool fixY = false;
+
+    bool useFast = true;
 
     float lineLength = 1;
     /**
@@ -44,10 +47,13 @@ struct LineX:public sgd::Adam{
         };
     }
 
+    /**
+     * @brief update
+     * @param data 2 or 3 row matrix, 3. row will be used as weight (weights will be normalised!)
+     */
     virtual void update(const Eigen::MatrixXd& data) override{
-        std::cout<<"start"<<std::endl;
-        std::cout<<"current state: "<<state<<std::endl;
-        if(data.rows()*data.cols() == 0){
+        if(data.cols() == 0 || !(data.rows() == 2 || data.rows() == 3)){
+            LMS_EXCEPTION("INVALID data size!" + std::to_string(data.rows())+ " " + std::to_string(data.cols()));
             return;
         }
         double oldX = 0,oldY = 0;
@@ -55,9 +61,7 @@ struct LineX:public sgd::Adam{
             oldX = state(0);
         if(fixY)
             oldY = state(1);
-
-        bool fast = false;
-        if(fast){
+        if(useFast){
             //calculate derv faster then in the default update method given in adam
             //calculate xy with epsilons
             //std::cout<<"START FAST"<<std::endl;
@@ -74,50 +78,43 @@ struct LineX:public sgd::Adam{
             }
 
             //the derivative we want to calculate
-            //std::cout<<"STATE SIZE:" <<state.rows()<< " "<<state.cols()<<std::endl;
             Eigen::VectorXd derv(state.rows());
             derv.setZero();
             //iterate over all data-vectors
+            double totalWeight = 0;
             for(int dv = 0; dv < data.cols(); dv++){
-                const Eigen::VectorXd &col = data.col(dv);
+                const Eigen::Vector2d &col = data.col(dv).head(2);
+                double weight = 1;
+                if(data.rows() == 3){
+                    weight=data.col(dv)(2);
+                }
+                totalWeight += weight;
                 //calculate distance
                 int index = 0;
                 for(int i = 0; i < derv.rows();i++){
-                    std::cout<<"I AM IN ROW "<<i<<std::endl;
                     //we assume that the index of the segment does not change, so we only have to find the segment once!
-
                     double minDisth;
                     double unused;
-
                     if(i == 0)
                         minDisth = minimum_distance(xyh[i],col,index);
                     else
                         minDisth = minimum_distanceToSegment(xyh[i].row(0),xyh[i].row(0+1),col,unused);
                     double minDistH = minimum_distanceToSegment(xyH[i].row(0),xyH[i].row(0+1),col,unused);
-
-                    //minDisth = minimum_distance(xyh[i],col,index);
-                    //minDistH = minimum_distance(xyH[i],col,index);
-                    //std::cout<<"INDEX: "<<index<<std::endl;
-                    //std::cout<<"DISTANCES "<<minDisth << " "<<minDistH<<std::endl;
-                    //std::cout<<"DIFF "<<minDistH-minDisth<<std::endl;
-                    derv(i) +=(minDisth-minDistH)/(2*h); //TODO why h - H? should Adam be -derv? //TODO weights
+                    derv(i) +=(minDisth-minDistH)/(2*h)*weight; //TODO why h - H? should Adam be -derv? //TODO weights
                 }
             }
-            //std::cout<<"FINAL DERV: "<<derv<<std::endl;
-            if(data.cols() != 0)
-                derv.array()/=data.cols();
+            if(totalWeight != 0) //can happen if all weights are 0
+                derv.array()/=totalWeight;
             this->sgd::Adam::updateFast(derv);
         }else{
             this->sgd::Adam::update(data);
-
         }
 
+        //fix positions if wanted TODO we could move the line to the position instead
         if(fixX)
             state(0) = oldX;
         if(fixY)
             state(1) = oldY;
-
-        //std::cout<<"new state: "<<state<<std::endl;
     }
 
     Eigen::VectorXd deriveDistance(const Eigen::Vector2d& p){

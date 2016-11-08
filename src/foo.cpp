@@ -121,7 +121,7 @@ int main(int argc, char** argv){
         //fit line
         double error = 0;
         for(int i = 0; i < numberOfPoints; i++){
-            lineX.update(Eigen::Vector2d(mData(i,0),mData(i,1)));
+            lineX.update(Eigen::Vector3d(mData(i,0),mData(i,1),2));
         }
         error = error/numberOfPoints;
         //std::cout<<"error: " <<error<<std::endl;
