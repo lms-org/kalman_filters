@@ -83,16 +83,12 @@ struct LineX:public sgd::Adam{
                 Eigen::VectorXd derv(state.rows());
                 derv.setZero();
                 //iterate over all data-vectors
-                double totalWeight = 0;
                 for(int dv = 0; dv < data.cols(); dv++){
                     const Eigen::Vector2d &col = data.col(dv).head(2);
                     double weight = 1;
-
                     if(data.rows() == 3){
                         weight=data.col(dv)(2);
                     }
-
-                    totalWeight += weight;
                     //calculate distance
                     int index = 0;
                     for(int i = 0; i < derv.rows();i++){
@@ -104,7 +100,7 @@ struct LineX:public sgd::Adam{
                         else
                             minDisth = minimum_distanceToSegment(xyh[i].row(index),xyh[i].row(index+1),col,unused);
                         double minDistH = minimum_distanceToSegment(xyH[i].row(index),xyH[i].row(index+1),col,unused);
-                        derv(i) +=(minDisth-minDistH)/(2*h)*weight; //TODO why h - H? should Adam be -derv? //TODO weights
+                        derv(i) +=(minDisth-minDistH)/(2*h)*weight; //TODO why h - H? should Adam be -derv?
                     }
                 }
                 sgd::Adam::updateFast(derv);
