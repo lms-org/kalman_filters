@@ -36,7 +36,7 @@ struct Adam:public SGDContainer{
     }
 
     /**
-     * @brief update
+     * @brief update, numerOfIterations can't be handled in this method, call it several times
      * @param data are col vectors (each row is one vector)
      */
     void updateFast(const Eigen::VectorXd& derv){
@@ -64,19 +64,9 @@ struct Adam:public SGDContainer{
                 if(data.cols() <= 0)
                     derv = sg(Eigen::VectorXd(),alpha);
                 else{
-                    derv = sg(data.col(j),alpha);
+                    derv = sg(data.col(j).head(2),alpha);
                 }
                 opt(state,derv,m,v,b1,b2,a,e);
-                /*
-                //calculate momentums
-                m = b1*m+(1-b1)*derv;
-                v = b2*v+((1-b2)*derv.array()*derv.array()).matrix();
-
-                //calculate bias corrected momentums
-                Eigen::VectorXd mC = m/(1-b1);
-                Eigen::VectorXd mV = v/(1-b2*b2);
-                state = state - (a*mC.array()/(mV.array().sqrt()+e)).matrix();
-                */
                 j++;
             }while(j < data.cols());
         }
