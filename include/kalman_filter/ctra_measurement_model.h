@@ -1,5 +1,4 @@
-#ifndef CAR_TRACKER_FILTER_MEASUREMENT_MODEL_H
-#define CAR_TRACKER_FILTER_MEASUREMENT_MODEL_H
+#pragma once
 
 #include <kalman/LinearizedMeasurementModel.hpp>
 #include "filter/system_model.h"
@@ -99,4 +98,3 @@ protected:
 } // namespace CTRA
 } // namespace KALMAN_FILTERS
 
-#endif

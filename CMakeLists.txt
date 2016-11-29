@@ -7,7 +7,7 @@ set(HEADERS
     include/kalman_filter/ctra_system_model.h
     include/kalman_filter/line_ekf.h
     include/kalman_filter/ctra_ekf.h
-    include/kalman_filter/mass_ekf.h
+    include/kalman_filter/mass_2d_rot.h
     include/filter/line_line_x.h
     include/filter/sgd.h
     include/filter/adam.h

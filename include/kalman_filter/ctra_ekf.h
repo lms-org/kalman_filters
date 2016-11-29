@@ -1,5 +1,4 @@
-#ifndef KALMAN_FILTERS_CTRA_EKF_H
-#define KALMAN_FILTERS_CTRA_EKF_H
+#pragma once
 #include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <kalman_filter/ctra_measurement_model.h>
@@ -66,4 +65,3 @@ struct CTRAContainer{
 
 } //namespace CTRA
 } //namespace KALMAN_FILTERS_CTRA_EKF
-#endif //KALMAN_FILTERS_CTRA_EKF

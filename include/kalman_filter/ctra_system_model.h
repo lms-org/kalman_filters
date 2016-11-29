@@ -1,5 +1,4 @@
-#ifndef CAR_TRACKER_FILTER_SYSTEM_MODEL_H
-#define CAR_TRACKER_FILTER_SYSTEM_MODEL_H
+#pragma once
 
 #include <kalman/LinearizedSystemModel.hpp>
 
@@ -199,4 +198,3 @@ protected:
 
 } // namespace CTRA
 } //KALMAN_FILTERS
-#endif

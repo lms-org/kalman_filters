@@ -1,5 +1,4 @@
-#ifndef KALMAN_FILTERS_LINE_EKF
-#define KALMAN_FILTERS_LINE_EKF
+#pragma once
 #include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 
@@ -150,4 +149,3 @@ public:
 
 } //namespace lineKalman
 } //namespace KALMAN_FILTERS
-#endif //KALMAN_FILTERS_LINE_EKF

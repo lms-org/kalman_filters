@@ -1,36 +1,64 @@
-#ifndef KALMAN_FILTERS_MASS_EKF_H
-#define KALMAN_FILTERS_MASS_EKF_H
+#pragma once
 #include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
-
-//TODO not done yet
+#include <kalman/UnscentedKalmanFilter.hpp>
 
 namespace KALMAN_FILTERS{
-namespace MASS_EKF{
+namespace MASS_2D_EKF{
 typedef float T;
 //State
 template<typename T>
-class State : public Kalman::Vector<T, 4>{
-    //erster x-Wert immer gleich 0
-    //-> erster wert y variabel
-    //-> winkel
+class State : public Kalman::Vector<T, 5>{
+public:
     static constexpr size_t X = 0;
     static constexpr size_t Y = 1;
     static constexpr size_t VX = 2;
     static constexpr size_t VY = 3;
-public:
-    KALMAN_VECTOR(State, T, 4)
-    T x(){
+    /**
+     * @brief PHI rotation angle
+     */
+    static constexpr size_t PHI = 4;
+    /**
+     * @brief OMEGA angular velocity
+     */
+    static constexpr size_t OMEGA = 5;
+
+    KALMAN_VECTOR(State, T, 5)
+    T& x(){
         return (*this)[X];
     }
-    T y(){
+    T& y(){
         return (*this)[Y];
     }
-    T vx(){
+    T& vx(){
         return (*this)[VX];
     }
-    T vy(){
+    T& vy(){
         return (*this)[VY];
+    }
+    T& phi(){
+        return (*this)[PHI];
+    }
+    T& omega(){
+        return (*this)[OMEGA];
+    }
+    T x() const{
+        return (*this)[X];
+    }
+    T y() const{
+        return (*this)[Y];
+    }
+    T vx() const{
+        return (*this)[VX];
+    }
+    T vy() const{
+        return (*this)[VY];
+    }
+    T phi() const{
+        return (*this)[PHI];
+    }
+    T omega() const{
+        return (*this)[OMEGA];
     }
 };
 
@@ -47,23 +75,30 @@ public:
 };
 
 template<typename T>
-class Measurement : public Kalman::Vector<T, 2>{
+class Measurement : public Kalman::Vector<T,3>{
     //hier üebrgibt man die gefundenen neuen Punkte
 public:
-    static constexpr size_t X = 0;
-    static constexpr size_t Y = 1;
-    KALMAN_VECTOR(Measurement, T, 2)
-    T x() const{
-        return (*this)[X];
+    static constexpr size_t VX = 0;
+    static constexpr size_t VY = 1;
+    static constexpr size_t OMEGA = 2;
+    KALMAN_VECTOR(Measurement, T, 3)
+    T vx() const{
+        return (*this)[VX];
     }
-    T y() const{
-        return (*this)[Y];
+    T vy() const{
+        return (*this)[VY];
     }
-    T& x(){
-        return (*this)[X];
+    T omega() const{
+        return (*this)[OMEGA];
     }
-    T& y(){
-        return (*this)[Y];
+    T& vx(){
+        return (*this)[VX];
+    }
+    T& vy(){
+        return (*this)[VY];
+    }
+    T& omega(){
+        return (*this)[OMEGA];
     }
 };
 
@@ -90,9 +125,9 @@ public:
 M h(const S& x) const
 {
     M measurement;
-    //TODO wie bekomme ich dann hier dx,dy,dhi rein oder brauch ich die hier garnicht?
     measurement.x() = x.x();
     measurement.y() = x.y();
+    measurement.omega() = x.omega();
     return measurement;
 }
 };
@@ -119,20 +154,52 @@ public:
      */
     S f(const S& x, const C& u) const{
         S res = x;
-        res.x() = x.x()+ x.vx()*u.dt();
-        res.y() = x.y()+x.vy()*u.dt();
+        //create State Matrix
+        Eigen::Matrix3f stateMat;
+        stateMat(0,0) = std::cos(x.phi());
+        stateMat(0,1) = -std::sin(x.phi());
+        stateMat(1,0) = std::sin(x.phi());
+        stateMat(1,1) = std::cos(x.phi());
+        stateMat(0,2) = x.x();
+        stateMat(1,2) = x.y();
+        stateMat(2,0) = 0;
+        stateMat(2,1) = 0;
+        stateMat(2,2) = 1;
+        Eigen::Matrix3f transRot;
+        //TODO dx,dy change if dAngle is not zero
+        float dAngle = x.omega()*u.dt();
+        float dx = x.vx()*u.dt();
+        float dy = x.vy()*u.dt();
+        transRot(0,0) = std::cos(dAngle);
+        transRot(0,1) = -std::sin(dAngle);
+        transRot(1,0) = std::sin(dAngle);
+        transRot(1,1) = std::cos(dAngle);
+        transRot(0,2) = dx;
+        transRot(1,2) = dy;
+        transRot(2,0) = 0;
+        transRot(2,1) = 0;
+        transRot(2,2) = 1;
+        Eigen::Vector3f pos{0,0,1};
+        stateMat = stateMat*transRot;
+        pos = stateMat*pos;
+        res.x() = pos(0);
+        res.y() = pos(1);
+        res.phi() = atan2(transRot(1,0),transRot(0,0));
         return res;
     }
 
 
     void updateJacobians( const S& x, const C& u ){
         this->F.setIdentity();
-        this->F(S::X,S::VX) = u.dt();
-        this->F(S::Y,S::VY) = u.dt();
+        //TODO has to be done, but I will give UKF a try :)
+        //this->F(S::X,S::VX) = u.dt();
+        //this->F(S::Y,S::VY) = u.dt();
     }
 };
-class ExtendedKalmanFilterForMassModel{
 
+
+template<class F>
+class FilterForMassModel{
 public:
     typedef float T;
 
@@ -142,7 +209,7 @@ public:
 
     typedef MeasurementModel<T> MyMeasurementModel;
     typedef SystemModel<T> MySystemModel;
-    typedef Kalman::ExtendedKalmanFilter<MyState> Filter;
+    typedef F Filter; //TODO The Filter state could differ from MyState
 
 protected:
     MyControl u;
@@ -155,15 +222,16 @@ protected:
 
 public:
 
-    void setMeasurementVec(const T x, const T y){
+    void setMeasurementVec(const T x, const T y,const T omega){
         z.x() = x;
         z.y() = y;
+        z.omega() = omega;
     }
     void predict(T dt){
         u.dt() = dt;
         filter.predict(sys, u);
     }
-    //TODO
+
     void init(){
         // Init kalman
         MyState s;
@@ -199,12 +267,10 @@ public:
         predict(dt);
         update();
     }
-
-
-
 };
 
+typedef FilterForMassModel<Kalman::ExtendedKalmanFilter<State<T>>> MassModelEKF;
+typedef FilterForMassModel<Kalman::UnscentedKalmanFilter<State<T>>> MassModelUKF;
 
 } //namespace KALMAN_FILTERS_MASS_EKF
 } //namespace KALMAN_FILTERS
-#endif //KALMAN_FILTERS_MASS_EKF_H
