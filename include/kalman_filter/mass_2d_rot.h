@@ -2,13 +2,14 @@
 #include <Eigen/Eigen>
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <kalman/UnscentedKalmanFilter.hpp>
+#include <iostream>
 
 namespace KALMAN_FILTERS{
-namespace MASS_2D_EKF{
+namespace MASS_2D_ROT_EKF{
 typedef float T;
 //State
 template<typename T>
-class State : public Kalman::Vector<T, 5>{
+class State : public Kalman::Vector<T, 6>{
 public:
     static constexpr size_t X = 0;
     static constexpr size_t Y = 1;
@@ -23,7 +24,7 @@ public:
      */
     static constexpr size_t OMEGA = 5;
 
-    KALMAN_VECTOR(State, T, 5)
+    KALMAN_VECTOR(State, T, 6)
     T& x(){
         return (*this)[X];
     }
@@ -76,7 +77,6 @@ public:
 
 template<typename T>
 class Measurement : public Kalman::Vector<T,3>{
-    //hier üebrgibt man die gefundenen neuen Punkte
 public:
     static constexpr size_t VX = 0;
     static constexpr size_t VY = 1;
@@ -125,10 +125,18 @@ public:
 M h(const S& x) const
 {
     M measurement;
-    measurement.x() = x.x();
-    measurement.y() = x.y();
+    //TODO what is measurement.x()???
+    measurement.vx() = x.vx();
+    measurement.vy() = x.vy();
     measurement.omega() = x.omega();
     return measurement;
+}
+
+void updateJacobians(const S& x){
+    (void)x;
+    this->H.setIdentity();
+    this->V.setIdentity();
+    //TODO has to be done, but I will give UKF a try :)
 }
 };
 
@@ -155,6 +163,7 @@ public:
     S f(const S& x, const C& u) const{
         S res = x;
         //create State Matrix
+        //std::cout<<"BEGIN res: "<<res.x()<<" "<<res.y()<<std::endl;
         Eigen::Matrix3f stateMat;
         stateMat(0,0) = std::cos(x.phi());
         stateMat(0,1) = -std::sin(x.phi());
@@ -184,23 +193,23 @@ public:
         pos = stateMat*pos;
         res.x() = pos(0);
         res.y() = pos(1);
-        res.phi() = atan2(transRot(1,0),transRot(0,0));
+        res.phi() = atan2(stateMat(1,0),stateMat(0,0)); //TODO this seems to be wrong but I don't know why
         return res;
     }
 
 
     void updateJacobians( const S& x, const C& u ){
+        (void)x;
+        (void)u;
         this->F.setIdentity();
+        this->W.setIdentity();
         //TODO has to be done, but I will give UKF a try :)
-        //this->F(S::X,S::VX) = u.dt();
-        //this->F(S::Y,S::VY) = u.dt();
     }
 };
 
 
 template<class F>
 class FilterForMassModel{
-public:
     typedef float T;
 
     typedef State<T> MyState;
@@ -221,15 +230,19 @@ protected:
     Filter filter;
 
 public:
+    MyState lastState;
 
-    void setMeasurementVec(const T x, const T y,const T omega){
-        z.x() = x;
-        z.y() = y;
+    void setMeasurementVec(const T vx, const T vy,const T omega){
+        z.setZero();
+        z.vx() = vx;
+        z.vy() = vy;
         z.omega() = omega;
+        //z.x() = 1; //TODO why does this compile, there is no method called x() is MyMeasurement?
+        //z.y() = 2; //It seems to be a State???
     }
     void predict(T dt){
         u.dt() = dt;
-        filter.predict(sys, u);
+        lastState = filter.predict(sys, u);
     }
 
     void init(){
@@ -255,12 +268,10 @@ public:
         cov.setIdentity();
         //TODO cov.setZero();
         mm.setCovariance(cov);
-
-
     }
 
     void update(){
-        filter.update(mm, z);
+        lastState = filter.update(mm, z);
     }
 
     void pu(T dt){
