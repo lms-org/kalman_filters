@@ -3,8 +3,8 @@
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <kalman/UnscentedKalmanFilter.hpp>
 
-namespace KALMAN_FILTERS{
-namespace MASS_2D_EKF{
+namespace kalman_filters{
+namespace ctrv_vxy{
 typedef float T;
 //State
 template<typename T>

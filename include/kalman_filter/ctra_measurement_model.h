@@ -3,7 +3,7 @@
 #include <kalman/LinearizedMeasurementModel.hpp>
 #include "filter/system_model.h"
 
-namespace KALMAN_FILTERS{
+namespace kalman_filters{
 namespace CTRA {
 
 /**

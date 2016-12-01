@@ -4,7 +4,7 @@
 
 //TODO not done yet
 
-namespace KALMAN_FILTERS{
+namespace kalman_filters{
 namespace lineKalman{
 typedef float T;
 //State
