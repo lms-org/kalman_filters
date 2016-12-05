@@ -1,4 +1,4 @@
-#include <kalman_filter/mass_2d_rot.h>
+#include <kalman_filter/ctrv_vxy.h>
 #include <filter/line_line_x.h>
 #include <filter/sgd.h>
 #include <iostream>
@@ -15,7 +15,7 @@
 #include <filter/adam.h>
 
 int main(int argc, char** argv){
-    KALMAN_FILTERS::MASS_2D_ROT_EKF::MassModelUKF ukf;
+    kalman_filters::ctrv_vxy::MassModelUKF ukf;
     (void)argc;
     (void)argv;
     std::function<double(double)> f1 = [](double x){

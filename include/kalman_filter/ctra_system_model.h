@@ -2,7 +2,7 @@
 
 #include <kalman/LinearizedSystemModel.hpp>
 
-namespace KALMAN_FILTERS{
+namespace kalman_filters{
 
 namespace CTRA {
 

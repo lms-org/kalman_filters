@@ -4,27 +4,31 @@
 #include <kalman/UnscentedKalmanFilter.hpp>
 #include <iostream>
 
-namespace KALMAN_FILTERS{
-namespace MASS_2D_ROT_EKF{
+//TODO
+
+namespace kalman_filters{
+namespace ctra_vxy{
 typedef float T;
 //State
 template<typename T>
-class State : public Kalman::Vector<T, 6>{
+class State : public Kalman::Vector<T, 8>{
 public:
     static constexpr size_t X = 0;
     static constexpr size_t Y = 1;
     static constexpr size_t VX = 2;
     static constexpr size_t VY = 3;
+    static constexpr size_t AX = 4;
+    static constexpr size_t AY = 5;
     /**
      * @brief PHI rotation angle
      */
-    static constexpr size_t PHI = 4;
+    static constexpr size_t PHI = 6;
     /**
      * @brief OMEGA angular velocity
      */
-    static constexpr size_t OMEGA = 5;
+    static constexpr size_t OMEGA = 7;
 
-    KALMAN_VECTOR(State, T, 6)
+    KALMAN_VECTOR(State, T, 8)
     T& x(){
         return (*this)[X];
     }
@@ -36,6 +40,12 @@ public:
     }
     T& vy(){
         return (*this)[VY];
+    }
+    T& ax(){
+        return (*this)[AX];
+    }
+    T& ay(){
+        return (*this)[AY];
     }
     T& phi(){
         return (*this)[PHI];
@@ -54,6 +64,12 @@ public:
     }
     T vy() const{
         return (*this)[VY];
+    }
+    T ax() const{
+        return (*this)[AX];
+    }
+    T ay() const{
+        return (*this)[AY];
     }
     T phi() const{
         return (*this)[PHI];
@@ -76,12 +92,14 @@ public:
 };
 
 template<typename T>
-class Measurement : public Kalman::Vector<T,3>{
+class Measurement : public Kalman::Vector<T,5>{
 public:
     static constexpr size_t VX = 0;
     static constexpr size_t VY = 1;
-    static constexpr size_t OMEGA = 2;
-    KALMAN_VECTOR(Measurement, T, 3)
+    static constexpr size_t AX = 2;
+    static constexpr size_t AY = 3;
+    static constexpr size_t OMEGA = 4;
+    KALMAN_VECTOR(Measurement, T, 5)
     T vx() const{
         return (*this)[VX];
     }
@@ -96,6 +114,12 @@ public:
     }
     T& vy(){
         return (*this)[VY];
+    }
+    T& ax(){
+        return (*this)[AX];
+    }
+    T& ay(){
+        return (*this)[AY];
     }
     T& omega(){
         return (*this)[OMEGA];
@@ -122,13 +146,15 @@ public:
  * @param [in] x The system state in current time-step
  * @returns The (predicted) sensor measurement for the system state
  */
-M h(const S& x) const
-{
+M h(const S& x) const{
     M measurement;
-    //TODO what is measurement.x()???
+
     measurement.vx() = x.vx();
     measurement.vy() = x.vy();
+    measurement.ax() = x.ax();
+    measurement.ay() = x.ay();
     measurement.omega() = x.omega();
+
     return measurement;
 }
 
@@ -162,38 +188,24 @@ public:
      */
     S f(const S& x, const C& u) const{
         S res = x;
-        //create State Matrix
-        //std::cout<<"BEGIN res: "<<res.x()<<" "<<res.y()<<std::endl;
-        Eigen::Matrix3f stateMat;
-        stateMat(0,0) = std::cos(x.phi());
-        stateMat(0,1) = -std::sin(x.phi());
-        stateMat(1,0) = std::sin(x.phi());
-        stateMat(1,1) = std::cos(x.phi());
-        stateMat(0,2) = x.x();
-        stateMat(1,2) = x.y();
-        stateMat(2,0) = 0;
-        stateMat(2,1) = 0;
-        stateMat(2,2) = 1;
-        Eigen::Matrix3f transRot;
-        //TODO dx,dy change if dAngle is not zero
+        //TODO Schwimmwinkel kalman Filtern und damit ein Lustiges Modell bauen
         float dAngle = x.omega()*u.dt();
-        float dx = x.vx()*u.dt();
-        float dy = x.vy()*u.dt();
-        transRot(0,0) = std::cos(dAngle);
-        transRot(0,1) = -std::sin(dAngle);
-        transRot(1,0) = std::sin(dAngle);
-        transRot(1,1) = std::cos(dAngle);
-        transRot(0,2) = dx;
-        transRot(1,2) = dy;
-        transRot(2,0) = 0;
-        transRot(2,1) = 0;
-        transRot(2,2) = 1;
-        Eigen::Vector3f pos{0,0,1};
-        stateMat = stateMat*transRot;
-        pos = stateMat*pos;
-        res.x() = pos(0);
-        res.y() = pos(1);
-        res.phi() = atan2(stateMat(1,0),stateMat(0,0)); //TODO this seems to be wrong but I don't know why
+        //rotate the velocity
+        Eigen::Matrix2f vRot;
+        vRot(0,0) = std::cos(0.1);
+        vRot(0,1) = -std::sin(0.1);
+        vRot(1,0) = std::sin(0.1);
+        vRot(1,1) = std::cos(0.1);
+        Eigen::Vector2f vV;
+        vV(0) = x.vx();
+        vV(1) = x.vy();
+        vV = vRot*vV;
+        res.vx() = vV(0);
+        res.vy() = vV(1);
+
+        res.x() += res.vx()*u.dt();
+        res.y() += res.vy()*u.dt();
+        res.phi() += dAngle;
         return res;
     }
 
@@ -234,11 +246,19 @@ public:
 
     void setMeasurementVec(const T vx, const T vy,const T omega){
         z.setZero();
-        z.vx() = vx;
-        z.vy() = vy;
+
+        Eigen::Matrix2f vRot;
+        vRot(0,0) = std::cos(lastState.phi());
+        vRot(0,1) = -std::sin(lastState.phi());
+        vRot(1,0) = std::sin(lastState.phi());
+        vRot(1,1) = std::cos(lastState.phi());
+        Eigen::Vector2f vV;
+        vV(0) = vx;
+        vV(1) = vy;
+        vV = vRot*vV;
+        z.vx() = vV(0);
+        z.vy() = vV(1);
         z.omega() = omega;
-        //z.x() = 1; //TODO why does this compile, there is no method called x() is MyMeasurement?
-        //z.y() = 2; //It seems to be a State???
     }
     void predict(T dt){
         u.dt() = dt;

@@ -1,4 +1,4 @@
-#include <kalman_filter/mass_2d_rot.h>
+#include <kalman_filter/ctrv_vxy.h>
 #include <filter/line_line_x.h>
 #include <filter/sgd.h>
 #include <iostream>
@@ -12,7 +12,11 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QSplineSeries>
 #include <QtCharts/QScatterSeries>
+#include <QtWidgets>
 #include <filter/adam.h>
+
+Eigen::Vector2f vV;
+Eigen::Vector2f xV;
 
 void scaleChart(QtCharts::QChart *chart, std::vector<QtCharts::QXYSeries*> series_,const bool sameAxes){
     float xMin = std::numeric_limits<float>::max(); // everything is <= this
@@ -60,7 +64,10 @@ void scaleChart(QtCharts::QChart *chart, QtCharts::QXYSeries *series, const bool
 }
 
 int main(int argc, char** argv){
-    KALMAN_FILTERS::MASS_2D_ROT_EKF::MassModelUKF ukf;
+    vV(0) = 1;
+    vV(1) = 0;
+    xV.setZero();
+    kalman_filters::ctrv_vxy::MassModelUKF ukf;
     ukf.init();
     //QWT http://qwt.sourceforge.net/
     //oder einfach nur qt5 http://doc.qt.io/qt-5/qtdatavisualization-index.html
@@ -68,46 +75,84 @@ int main(int argc, char** argv){
     QT_CHARTS_USE_NAMESPACE
 
     QApplication app(argc, argv);
+    QWidget *central = new QWidget();
+    QGridLayout *layout = new QGridLayout;
+    central->setLayout(layout);
 
-    QLineSeries vx,ukfVX;
-    QScatterSeries points;
+    QLineSeries ukfVY,ukfVX,ukfV;
+    QLineSeries points;
 
-    QChart *chart = new QChart();
-    vx.setName("vx");
+    //velocity X
+    QChart *vxChart = new QChart();
+    ukfVY.setName("ukf vy");
     ukfVX.setName("ukf vx");
-    chart->addSeries(&vx);
-    chart->addSeries(&ukfVX);
-    chart->createDefaultAxes();
-    chart->setTitle("UKF");
+    ukfV.setName("ukf abs v");
+    vxChart->addSeries(&ukfVY);
+    vxChart->addSeries(&ukfVX);
+    vxChart->addSeries(&ukfV);
+    vxChart->createDefaultAxes();
+    vxChart->setTitle("UKF");
+    QChartView vxChartView(vxChart);
+    vxChartView.setRenderHint(QPainter::Antialiasing);
+    layout->addWidget(&vxChartView);
 
-    QChartView chartView(chart);
-    chartView.setRenderHint(QPainter::Antialiasing);
+
+    QChart *positionChart = new QChart();
+    points.setName("position");
+    positionChart->addSeries(&points);
+    positionChart->createDefaultAxes();
+    positionChart->legend()->hide();
+    vxChart->setTitle("Position in m");
+    //velocity X
+    QChartView positionChartView(positionChart);
+    positionChartView.setRenderHint(QPainter::Antialiasing);
+    layout->addWidget(&positionChartView);
 
     QMainWindow window;
-    window.setCentralWidget(&chartView);
+    window.setCentralWidget(central);
+
     window.resize(400, 300);
     window.show();
-    float velocityX = 0;
+    float velocityX = 5;
     float velocityY = 0;
+    float angularVelocity = 0.2;
     int iter = 0;
+
     while(true){
-        std::cout<<"vx: "<<velocityX<<std::endl;
-        ukf.setMeasurementVec(velocityX,0,0);
+        //std::cout<<"vx: "<<velocityX<<std::endl;
+        ukf.setMeasurementVec(velocityX,velocityY,angularVelocity);
+        //ukf.predict(0.1); //TODO we just test predict
         ukf.pu(0.1);
-        vx.append(iter,velocityX);
+        /*
+        Eigen::Matrix2f vRot;
+        vRot(0,0) = std::cos(0.1);
+        vRot(0,1) = -std::sin(0.1);
+        vRot(1,0) = std::sin(0.1);
+        vRot(1,1) = std::cos(0.1);
+        vV = vRot*vV;
+        xV += vV*0.1;
+
+        ukfV.append(iter,std::sqrt(vV(0)*vV(0)+vV(1)*vV(1)));
+        ukfVX.append(iter,vV(0));
+        ukfVY.append(iter,vV(1));//ukf.lastState.vx());
+        points.append(xV(0),xV(1));
+        */
+
         ukfVX.append(iter,ukf.lastState.vx());
-        std::cout<<"vx ukf: "<<ukf.lastState.vx()<<std::endl;
+        ukfVY.append(iter,ukf.lastState.vy());
+        ukfV.append(iter,std::sqrt(ukf.lastState.vx()*ukf.lastState.vx()+ukf.lastState.vy()*ukf.lastState.vy()));
+        points.append(ukf.lastState.x(),ukf.lastState.y());
+        //std::cout<<"vx ukf: "<<ukf.lastState.vx()<<std::endl;
 
-
-        velocityX += 0.1;
-        velocityY += 0.1;
         iter++;
-
-        //std::cout <<"points: "<<mData<<std::endl;
 
         //update the gui
         //resize it manally as it doesn't work atm
-        scaleChart(chart,&vx,false);
+        std::vector<QtCharts::QXYSeries*> series;
+        series.push_back(&ukfVY);
+        series.push_back(&ukfVX);
+        scaleChart(vxChart,series,false);
+        scaleChart(positionChart,&points,true);
         app.processEvents();
 
         //timer
