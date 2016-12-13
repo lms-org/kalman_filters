@@ -182,10 +182,10 @@ public:
         float dAngle = x.omega()*u.dt();
         //rotate the velocity
         Eigen::Matrix2f vRot;
-        vRot(0,0) = std::cos(0.1);
-        vRot(0,1) = -std::sin(0.1);
-        vRot(1,0) = std::sin(0.1);
-        vRot(1,1) = std::cos(0.1);
+        vRot(0,0) = std::cos(dAngle);
+        vRot(0,1) = std::sin(dAngle);
+        vRot(1,0) = -std::sin(dAngle);
+        vRot(1,1) = std::cos(dAngle);
         Eigen::Vector2f vV;
         vV(0) = x.vx();
         vV(1) = x.vy();
@@ -233,10 +233,15 @@ protected:
 
 public:
     MyState lastState;
-
+    /**
+     * @brief setMeasurementVec
+     * @param vx in local coordinates
+     * @param vy in local coordinates
+     * @param omega
+     */
     void setMeasurementVec(const T vx, const T vy,const T omega){
         z.setZero();
-
+        //passive rot matrix but the phi is negative -> looks like active rot matrix
         Eigen::Matrix2f vRot;
         vRot(0,0) = std::cos(lastState.phi());
         vRot(0,1) = -std::sin(lastState.phi());
