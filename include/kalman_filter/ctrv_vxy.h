@@ -241,11 +241,11 @@ public:
      */
     void setMeasurementVec(const T vx, const T vy,const T omega){
         z.setZero();
-        //passive rot matrix
+        //passive rot matrix but as we rotate -phi it looks like a active rotation
         Eigen::Matrix2f vRot;
         vRot(0,0) = std::cos(lastState.phi());
-        vRot(0,1) = std::sin(lastState.phi());
-        vRot(1,0) = -std::sin(lastState.phi());
+        vRot(0,1) = -std::sin(lastState.phi());
+        vRot(1,0) = std::sin(lastState.phi());
         vRot(1,1) = std::cos(lastState.phi());
         Eigen::Vector2f vV;
         vV(0) = vx;
