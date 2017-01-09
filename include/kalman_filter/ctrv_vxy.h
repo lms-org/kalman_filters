@@ -6,6 +6,9 @@
 
 namespace kalman_filters{
 namespace ctrv_vxy{
+/**
+ * I am not sure if integrating X,Y inside the kalman filter is a good idea as it might mess up some coef matrix (big values) as x,y is not observable.
+ */
 typedef float T;
 //State
 template<typename T>
