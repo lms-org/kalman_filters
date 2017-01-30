@@ -263,10 +263,13 @@ public:
         lastState = filter.predict(sys, u);
     }
 
-    void init(){
+    void init(float x = 0, float y = 0, float phi = 0){
         // Init kalman
         MyState s;
         s.setZero();
+        s.x() = x;
+        s.y() = y;
+        s.phi() = phi;
         filter.init(s);
 
         // Set initial state covariance
